@@ -124,16 +124,15 @@ let testWords = [];
 let shuffledVocab = [];
 let currentCardIndex = 0;
 let learningTimer = null;
-let retrievalTimer = null;
 let fillerTimer = null;
 let learningStartTime = null;
 let retrievalStartTime = null;
 let fillerStartTime = null;
 let totalFlips = 0;
 let totalShuffles = 0;
-let currentLearningPhase = 'learning'; // 'learning', 'retrieval', 'filler'
 let retrievalWords = [];
 let currentRetrievalIndex = 0;
+let retrievalTimer = null;
 
 function startExperiment() {
     const name = document.getElementById('participant-name').value.trim();
@@ -194,12 +193,12 @@ function nextRecallQuestion() {
     
     const response = {
         word: word.word,
-        type: word.type || word.category,
+        type: word.type || word.category, // どちらかのプロパティを使用
         category: word.category,
         mainAnswer: answer,
         otherAnswer: other,
         timestamp: Date.now(),
-        responseTime: Date.now() - (experimentData.startTime || Date.now())
+        responseTime: Date.now() - (experimentData.startTime || Date.now()) // テスト開始からの経過時間
     };
     
     if (currentTestType === 'pretest') {
@@ -219,7 +218,7 @@ function startRecognitionTest() {
     } else {
         document.getElementById('recognition-title').textContent = '🎯 事後テスト';
     }
-    currentQuestionIndex = 0;
+    currentQuestionIndex = 0; // インデックスをリセット
     updateRecognitionQuestion();
 }
 
@@ -236,11 +235,10 @@ function updateRecognitionQuestion() {
     const word = testWords[currentQuestionIndex];
     document.getElementById('recognition-word').textContent = word.word;
     
-    // 選択肢をランダム化（「わからない」は固定）
     const allChoices = [...recognitionChoices[word.word]];
-    const iDontKnow = allChoices.pop(); // 「わからない」を取り出す
-    const otherChoices = allChoices.sort(() => Math.random() - 0.5); // 他の4つをシャッフル
-    const finalChoices = [...otherChoices, iDontKnow]; // 「わからない」を最後に固定
+    const iDontKnow = allChoices.pop(); 
+    const otherChoices = allChoices.sort(() => Math.random() - 0.5); 
+    const finalChoices = [...otherChoices, iDontKnow]; 
     
     const choicesHtml = finalChoices.map((choice, index) => 
         `<label class="choice-option">
@@ -251,7 +249,6 @@ function updateRecognitionQuestion() {
     
     document.getElementById('recognition-choices').innerHTML = choicesHtml;
     
-    // 選択肢のランダム化をログに記録
     experimentData.learningLog.push({
         action: 'recognition_choices_randomized',
         timestamp: Date.now(),
@@ -296,18 +293,17 @@ function nextRecognitionQuestion() {
 
 function startLearning() {
     showScreen('learning-session');
-    shuffledVocab = [...vocabularyData].sort(() => Math.random() - 0.5);
+    shuffledVocab = [...vocabularyData].sort(() => Math.random() - 0.5); // 学習対象の30語
     currentCardIndex = 0;
     totalFlips = 0;
     totalShuffles = 0;
-    learningStartTime = Date.now();
+    learningStartTime = Date.now(); // 学習フェーズ開始時間
     
     updateCard();
     startLearningTimer();
     
-    // 学習セッション開始をログ
     experimentData.learningLog.push({
-        action: 'learning_started',
+        action: 'learning_phase_started',
         timestamp: Date.now(),
         totalCards: shuffledVocab.length
     });
@@ -319,12 +315,12 @@ function updateCard() {
     const word = shuffledVocab[currentCardIndex];
     document.getElementById('card-word').textContent = word.word;
     
-    let meaningText = word.targetMeaning;
+    let meaningText = `<strong>${word.targetMeaning}</strong>`;
     if (word.definition) {
-        meaningText += `\n\n${word.definition}`;
+        meaningText += `<br><br><span style="font-size: 0.9em;">${word.definition}</span>`;
     }
     if (word.knownMeaning) {
-        meaningText += `\n\n（既知の意味：${word.knownMeaning}）`;
+        meaningText += `<br><br><span style="font-size: 0.9em;">（既知の意味：${word.knownMeaning}）</span>`;
     }
     document.getElementById('card-meaning').innerHTML = meaningText.replace(/\n/g, '<br>');
     
@@ -333,7 +329,6 @@ function updateCard() {
     document.getElementById('flip-count').textContent = totalFlips;
     document.getElementById('shuffle-count').textContent = totalShuffles;
     
-    // カードを表面に戻す
     document.getElementById('flashcard').classList.remove('flipped');
 }
 
@@ -344,13 +339,12 @@ function flipCard() {
     totalFlips++;
     document.getElementById('flip-count').textContent = totalFlips;
     
-    // カードめくりをログ
     experimentData.learningLog.push({
         action: 'card_flipped',
         timestamp: Date.now(),
         cardIndex: currentCardIndex,
         word: shuffledVocab[currentCardIndex].word,
-        flipped: flashcard.classList.contains('flipped')
+        isFlippedToBack: flashcard.classList.contains('flipped')
     });
 }
 
@@ -384,7 +378,7 @@ function previousCard() {
 
 function shuffleCards() {
     shuffledVocab = [...shuffledVocab].sort(() => Math.random() - 0.5);
-    currentCardIndex = 0;
+    currentCardIndex = 0; // シャッフル後は最初のカードに戻る
     totalShuffles++;
     updateCard();
     
@@ -392,13 +386,14 @@ function shuffleCards() {
         action: 'cards_shuffled',
         timestamp: Date.now(),
         shuffleCount: totalShuffles,
-        newOrder: shuffledVocab.map(w => w.word)
+        newOrderFirstWord: shuffledVocab.length > 0 ? shuffledVocab[0].word : 'N/A'
     });
 }
 
 function startLearningTimer() {
-    let timeLeft = 15 * 60; // 15分
-    
+    let timeLeft = 10 * 60;
+    document.getElementById('learning-timer').textContent = "10:00"; // 初期表示
+
     learningTimer = setInterval(() => {
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
@@ -406,87 +401,127 @@ function startLearningTimer() {
             `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
         if (timeLeft <= 0) {
-            clearInterval(learningTimer);
+            // clearInterval(learningTimer); // endLearning 内でクリアする
             endLearning();
         }
-        
         timeLeft--;
     }, 1000);
 }
 
 function endLearning() {
-    document.getElementById('learning-complete').classList.remove('hidden');
+    if (learningTimer) {
+      clearInterval(learningTimer);
+      learningTimer = null;
+    }
     
     experimentData.learningLog.push({
-        action: 'learning_ended',
+        action: 'learning_phase_ended',
         timestamp: Date.now(),
-        totalTime: Date.now() - learningStartTime,
+        totalTimeMillis: Date.now() - learningStartTime,
         totalFlips: totalFlips,
         totalShuffles: totalShuffles
     });
+    
+    showScreen('retrieval-session');
+    initializeRetrievalSession(); // 復習セッションの初期化と開始
 }
 
-function startPosttest() {
-    currentTestType = 'posttest';
-    testWords = [...allTestWords].sort(() => Math.random() - 0.5); // 再ランダム化（40語）
-    currentQuestionIndex = 0;
-    showRecallTest();
-}
+function initializeRetrievalSession() {
+    retrievalWords = [...vocabularyData].sort(() => Math.random() - 0.5); // 学習対象の30語をシャッフル
+    currentRetrievalIndex = 0;
+    retrievalStartTime = Date.now(); 
 
-function showResults() {
-    experimentData.endTime = Date.now();
-    
-    // 結果サマリーを表示
-    const totalLearningTime = Math.round((Date.now() - learningStartTime) / 60000);
-    document.getElementById('learning-time-result').textContent = totalLearningTime;
-    document.getElementById('total-flips-result').textContent = totalFlips;
-    document.getElementById('total-shuffles-result').textContent = totalShuffles;
-    
-    showScreen('results');
-}
-
-function downloadResults() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `vocabulary_experiment_${experimentData.participantInfo.studentId}_${timestamp}.csv`;
-    
-    let csv = 'Type,Data\n';
-    csv += `"Participant Info","${JSON.stringify(experimentData.participantInfo).replace(/"/g, '""')}"\n`;
-    csv += `"Pretest Recall","${JSON.stringify(experimentData.pretestRecall).replace(/"/g, '""')}"\n`;
-    csv += `"Pretest Recognition","${JSON.stringify(experimentData.pretestRecognition).replace(/"/g, '""')}"\n`;
-    csv += `"Posttest Recall","${JSON.stringify(experimentData.posttestRecall).replace(/"/g, '""')}"\n`;
-    csv += `"Posttest Recognition","${JSON.stringify(experimentData.posttestRecognition).replace(/"/g, '""')}"\n`;
-    csv += `"Learning Log","${JSON.stringify(experimentData.learningLog).replace(/"/g, '""')}"\n`;
-    csv += `"Experiment Duration","${experimentData.endTime - experimentData.startTime}"\n`;
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-}
-
-function showScreen(screenId) {
-    const screens = ['participant-info', 'pretest-intro', 'recall-test', 'recognition-test', 
-                   'learning-intro', 'learning-session', 'retrieval-session', 'filler-task', 'results'];
-    
-    screens.forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-    });
-    
-    document.getElementById(screenId).classList.remove('hidden');
-}
-
-// ページ離脱防止
-window.addEventListener('beforeunload', function(e) {
-    if (experimentData.startTime && !experimentData.endTime) {
-        e.preventDefault();
-        e.returnValue = '';
+    // UI初期化
+    const retrievalWordEl = document.getElementById('retrieval-word');
+    if (retrievalWordEl) {
+        retrievalWordEl.textContent = ""; 
+        retrievalWordEl.classList.remove('hidden');
     }
-});
+    const retrievalMeaningEl = document.getElementById('retrieval-meaning');
+    if (retrievalMeaningEl) retrievalMeaningEl.textContent = ""; 
 
-// 未実装の関数（元コードに不完全な部分があったため、基本的な実装を追加）
+    document.getElementById('retrieval-answer').classList.add('hidden');
+    document.getElementById('show-answer-btn').classList.remove('hidden');
+    document.getElementById('next-retrieval-btn').classList.add('hidden');
+    document.getElementById('retrieval-complete').classList.add('hidden'); 
+
+    updateRetrievalWordDisplay(); 
+    startRetrievalTimer();      
+
+    experimentData.learningLog.push({
+        action: 'retrieval_session_started',
+        timestamp: Date.now(),
+        totalWords: retrievalWords.length
+    });
+}
+
+function updateRetrievalWordDisplay() {
+    if (currentRetrievalIndex < retrievalWords.length) {
+        const word = retrievalWords[currentRetrievalIndex];
+        document.getElementById('retrieval-word').textContent = word.word;
+        
+        let meaningHtml = `<strong>${word.targetMeaning}</strong>`;
+        if (word.definition) {
+            meaningHtml += `<br><br><span style="font-size: 0.9em;">${word.definition}</span>`;
+        }
+        if (word.knownMeaning) {
+            meaningHtml += `<br><br><span style="font-size: 0.9em;">（既知の意味：${word.knownMeaning}）</span>`;
+        }
+        document.getElementById('retrieval-meaning').innerHTML = meaningHtml.replace(/\n/g, '<br>');
+
+        document.getElementById('retrieval-answer').classList.add('hidden');
+        document.getElementById('show-answer-btn').classList.remove('hidden');
+        document.getElementById('next-retrieval-btn').classList.add('hidden');
+    } else {
+        handleRetrievalComplete(false); // falseはタイマー切れではないことを示す
+    }
+}
+
+function startRetrievalTimer() {
+    let timeLeft = 5 * 60; // 5分
+    document.getElementById('retrieval-timer').textContent = "05:00"; 
+
+    if (retrievalTimer) clearInterval(retrievalTimer);
+
+    retrievalTimer = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('retrieval-timer').textContent =
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+            // clearInterval(retrievalTimer); // handleRetrievalComplete内でクリア
+            handleRetrievalComplete(true); 
+        }
+        timeLeft--;
+    }, 1000);
+}
+
+function handleRetrievalComplete(timerExpired) {
+    if (retrievalTimer) { 
+        clearInterval(retrievalTimer);
+        retrievalTimer = null;
+    }
+
+    const retrievalWordEl = document.getElementById('retrieval-word');
+    if (retrievalWordEl) retrievalWordEl.classList.add('hidden'); 
+    document.getElementById('show-answer-btn').classList.add('hidden');
+    document.getElementById('next-retrieval-btn').classList.add('hidden');
+    document.getElementById('retrieval-answer').classList.add('hidden');
+    document.getElementById('retrieval-timer').textContent = "00:00"; 
+
+    document.getElementById('retrieval-complete').classList.remove('hidden'); 
+
+    experimentData.learningLog.push({
+        action: 'retrieval_session_ended',
+        timestamp: Date.now(),
+        totalTimeMillis: Date.now() - retrievalStartTime,
+        reason: timerExpired ? 'timer_expired' : 'all_words_completed',
+        wordsReviewed: currentRetrievalIndex 
+    });
+}
+
 function showRetrievalAnswer() {
-    // 復習フェーズでの答え表示機能（元コードに不完全な実装があったため）
     const answerDiv = document.getElementById('retrieval-answer');
     const nextBtn = document.getElementById('next-retrieval-btn');
     const showBtn = document.getElementById('show-answer-btn');
@@ -495,44 +530,48 @@ function showRetrievalAnswer() {
         answerDiv.classList.remove('hidden');
         nextBtn.classList.remove('hidden');
         showBtn.classList.add('hidden');
+
+        if (currentRetrievalIndex < retrievalWords.length) {
+            experimentData.learningLog.push({
+                action: 'show_retrieval_answer',
+                timestamp: Date.now(),
+                word: retrievalWords[currentRetrievalIndex].word,
+                cardIndex: currentRetrievalIndex
+            });
+        }
     }
 }
 
 function nextRetrievalWord() {
-    // 復習フェーズでの次の単語への移動機能（元コードに不完全な実装があったため）
-    currentRetrievalIndex++;
-    if (currentRetrievalIndex >= vocabularyData.length) {
-        // 復習完了の処理
-        const retrievalComplete = document.getElementById('retrieval-complete');
-        if (retrievalComplete) {
-            retrievalComplete.classList.remove('hidden');
-        }
-        return;
+    if (currentRetrievalIndex < retrievalWords.length) {
+        experimentData.learningLog.push({
+            action: 'next_retrieval_word_click', // アクションを明確化
+            timestamp: Date.now(),
+            previousWord: retrievalWords[currentRetrievalIndex].word,
+            previousCardIndex: currentRetrievalIndex
+        });
     }
-    
-    // 次の単語を表示
-    const word = vocabularyData[currentRetrievalIndex];
-    const retrievalWord = document.getElementById('retrieval-word');
-    const answerDiv = document.getElementById('retrieval-answer');
-    const nextBtn = document.getElementById('next-retrieval-btn');
-    const showBtn = document.getElementById('show-answer-btn');
-    
-    if (retrievalWord) retrievalWord.textContent = word.word;
-    if (answerDiv) answerDiv.classList.add('hidden');
-    if (nextBtn) nextBtn.classList.add('hidden');
-    if (showBtn) showBtn.classList.remove('hidden');
+    currentRetrievalIndex++;
+    updateRetrievalWordDisplay(); 
 }
 
 function startFillerTask() {
-    // フィラータスクの開始機能（元コードに不完全な実装があったため）
     showScreen('filler-task');
     fillerStartTime = Date.now();
     startFillerTimer();
+
+    experimentData.learningLog.push({
+        action: 'filler_task_started',
+        timestamp: Date.now()
+    });
 }
 
 function startFillerTimer() {
     let timeLeft = 10 * 60; // 10分
-    
+    document.getElementById('filler-timer').textContent = "10:00";
+
+    if (fillerTimer) clearInterval(fillerTimer);
+
     fillerTimer = setInterval(() => {
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
@@ -543,23 +582,139 @@ function startFillerTimer() {
         }
         
         if (timeLeft <= 0) {
-            clearInterval(fillerTimer);
+            // clearInterval(fillerTimer); // endFillerTask内でクリア
             endFillerTask();
         }
-        
         timeLeft--;
     }, 1000);
 }
 
 function endFillerTask() {
+    if (fillerTimer) {
+        clearInterval(fillerTimer);
+        fillerTimer = null;
+    }
     const fillerComplete = document.getElementById('filler-complete');
     if (fillerComplete) {
         fillerComplete.classList.remove('hidden');
     }
     
+    const fillerResponse = document.getElementById('filler-response').value.trim();
     experimentData.learningLog.push({
         action: 'filler_task_ended',
         timestamp: Date.now(),
-        totalTime: Date.now() - fillerStartTime
+        totalTimeMillis: Date.now() - fillerStartTime,
+        response: fillerResponse // 回答内容も記録
     });
 }
+
+function startPosttest() {
+    currentTestType = 'posttest';
+    testWords = [...allTestWords].sort(() => Math.random() - 0.5); 
+    currentQuestionIndex = 0;
+    showRecallTest();
+
+    experimentData.learningLog.push({
+        action: 'posttest_started',
+        timestamp: Date.now()
+    });
+}
+
+function showResults() {
+    experimentData.endTime = Date.now();
+    
+    const learningPhaseDurationMillis = experimentData.learningLog.find(log => log.action === 'learning_phase_ended')?.totalTimeMillis || 0;
+    const learningTimeMinutes = Math.round(learningPhaseDurationMillis / 60000);
+
+    document.getElementById('learning-time-result').textContent = learningTimeMinutes;
+    document.getElementById('total-flips-result').textContent = totalFlips;
+    document.getElementById('total-shuffles-result').textContent = totalShuffles;
+    
+    showScreen('results');
+
+    experimentData.learningLog.push({
+        action: 'experiment_completed_results_shown',
+        timestamp: Date.now(),
+        totalExperimentDurationMillis: experimentData.endTime - experimentData.startTime
+    });
+}
+
+function downloadResults() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `vocabulary_experiment_${experimentData.participantInfo.studentId}_${timestamp}.csv`;
+    
+    // より構造化されたCSV出力（簡易版）
+    let csvContent = "Category,Key,Value\n";
+    
+    // Participant Info
+    for (const key in experimentData.participantInfo) {
+        csvContent += `ParticipantInfo,${key},"${experimentData.participantInfo[key]}"\n`;
+    }
+    csvContent += `ExperimentTimes,startTime,"${new Date(experimentData.startTime).toISOString()}"\n`;
+    csvContent += `ExperimentTimes,endTime,"${new Date(experimentData.endTime).toISOString()}"\n`;
+    csvContent += `ExperimentTimes,durationMillis,"${experimentData.endTime - experimentData.startTime}"\n`;
+
+    // Test Data (Recall & Recognition)
+    const formatTestData = (testType, data) => {
+        data.forEach((item, index) => {
+            csvContent += `${testType},index,${index}\n`;
+            for (const key in item) {
+                csvContent += `${testType},${key}_${index},"${String(item[key]).replace(/"/g, '""')}"\n`;
+            }
+        });
+    };
+
+    formatTestData("PretestRecall", experimentData.pretestRecall);
+    formatTestData("PretestRecognition", experimentData.pretestRecognition);
+    formatTestData("PosttestRecall", experimentData.posttestRecall);
+    formatTestData("PosttestRecognition", experimentData.posttestRecognition);
+    
+    // Learning Log
+    csvContent += "\nLogCategory,Action,Timestamp,Details\n";
+    experimentData.learningLog.forEach(log => {
+        const details = Object.entries(log)
+            .filter(([key]) => key !== 'action' && key !== 'timestamp')
+            .map(([key, value]) => `${key}:${String(value).replace(/"/g, '""')}`)
+            .join(';');
+        csvContent += `LearningLog,"${log.action}","${new Date(log.timestamp).toISOString()}","${details}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) { // Feature detection
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+function showScreen(screenId) {
+    const screens = ['participant-info', 'pretest-intro', 'recall-test', 'recognition-test', 
+                   'learning-intro', 'learning-session', 'retrieval-session', 'filler-task', 'results'];
+    
+    screens.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.add('hidden');
+        }
+    });
+    
+    const activeScreen = document.getElementById(screenId);
+    if (activeScreen) {
+        activeScreen.classList.remove('hidden');
+    } else {
+        console.error("Screen not found: ", screenId);
+    }
+}
+
+window.addEventListener('beforeunload', function(e) {
+    if (experimentData.startTime && !experimentData.endTime) {
+        const confirmationMessage = '回答はまだ完了していません。このページを離れると、現在の内容は失われます。本当に離れますか？';
+        e.returnValue = confirmationMessage; // 標準的なブラウザ用
+        return confirmationMessage;          // 古いブラウザ用
+    }
+});
