@@ -130,9 +130,9 @@ let retrievalStartTime = null;
 let fillerStartTime = null;
 let totalFlips = 0;
 let totalShuffles = 0;
-let retrievalWords = [];
-let currentRetrievalIndex = 0;
-let retrievalTimer = null;
+let retrievalWords = []; // 復習フェーズ用の単語リスト
+let currentRetrievalIndex = 0; // 復習フェーズの現在の単語インデックス
+let retrievalTimer = null; // 復習フェーズのタイマーID
 
 function startExperiment() {
     const name = document.getElementById('participant-name').value.trim();
@@ -344,7 +344,7 @@ function flipCard() {
         timestamp: Date.now(),
         cardIndex: currentCardIndex,
         word: shuffledVocab[currentCardIndex].word,
-        isFlippedToBack: flashcard.classList.contains('flipped')
+        isFlippedToBack: flashcard.classList.contains('flipped') // 状態を明確に
     });
 }
 
@@ -386,12 +386,12 @@ function shuffleCards() {
         action: 'cards_shuffled',
         timestamp: Date.now(),
         shuffleCount: totalShuffles,
-        newOrderFirstWord: shuffledVocab.length > 0 ? shuffledVocab[0].word : 'N/A'
+        newOrderFirstWord: shuffledVocab.length > 0 ? shuffledVocab[0].word : 'N/A' // 全単語リストは重いので代表値
     });
 }
 
 function startLearningTimer() {
-    let timeLeft = 10 * 60;
+    let timeLeft = 10 * 60; // 10分に修正
     document.getElementById('learning-timer').textContent = "10:00"; // 初期表示
 
     learningTimer = setInterval(() => {
@@ -481,7 +481,7 @@ function startRetrievalTimer() {
     let timeLeft = 5 * 60; // 5分
     document.getElementById('retrieval-timer').textContent = "05:00"; 
 
-    if (retrievalTimer) clearInterval(retrievalTimer);
+    if (retrievalTimer) clearInterval(retrievalTimer); // 既存のタイマーがあればクリア
 
     retrievalTimer = setInterval(() => {
         const minutes = Math.floor(timeLeft / 60);
@@ -570,7 +570,7 @@ function startFillerTimer() {
     let timeLeft = 10 * 60; // 10分
     document.getElementById('filler-timer').textContent = "10:00";
 
-    if (fillerTimer) clearInterval(fillerTimer);
+    if (fillerTimer) clearInterval(fillerTimer); // 既存のタイマーがあればクリア
 
     fillerTimer = setInterval(() => {
         const minutes = Math.floor(timeLeft / 60);
@@ -712,7 +712,7 @@ function showScreen(screenId) {
 }
 
 window.addEventListener('beforeunload', function(e) {
-    if (experimentData.startTime && !experimentData.endTime) {
+    if (experimentData.startTime && !experimentData.endTime) { // 実験開始後、まだ終了していない場合
         const confirmationMessage = '回答はまだ完了していません。このページを離れると、現在の内容は失われます。本当に離れますか？';
         e.returnValue = confirmationMessage; // 標準的なブラウザ用
         return confirmationMessage;          // 古いブラウザ用
