@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英語語彙学習学習</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Hiragino Sans', 'Meiryo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .experiment-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 40px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .flashcard {
+            width: 400px;
+            height: 250px;
+            margin: 0 auto 30px;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .flashcard-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: rotateY(180deg);
+            padding: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e53e3e;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .question-container {
+            text-align: left;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .word-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .choice-option {
+            display: block;
+            margin: 10px 0;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .choice-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .choice-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .warning {
+            background: #fed7d7;
+            color: #9b2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #fc8181;
+        }
+
+        .info {
+            background: #bee3f8;
+            color: #2a69ac;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #63b3ed;
+        }
+
+        .learning-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .experiment-card {
+                padding: 20px;
+            }
+            
+            .flashcard {
+                width: 300px;
+                height: 200px;
+            }
+            
+            .flashcard-front, .flashcard-back {
+                font-size: 18px;
+            }
+            
+            .timer {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 参加者情報入力画面 -->
+        <div id="participant-info" class="experiment-card">
+            <h1>🎓 英語語彙学習学習</h1>
+            <p style="margin-bottom: 30px; font-size: 18px; color: #718096;">
+                この学習では、英語の単語の意味を学習し、その効果を測定します。<br>
+                学習時間は約30-40分です。
+            </p>
+            
+            <div class="input-group">
+                <label for="participant-name">お名前 *</label>
+                <input type="text" id="participant-name" placeholder="山田太郎" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="student-id">学籍番号 *</label>
+                <input type="text" id="student-id" placeholder="例：20231234" required>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ 注意事項</strong><br>
+                • 学習中はメモを取らないでください<br>
+                • 途中で他のタブやアプリを開かないでください<br>
+                • 静かな環境で集中して取り組んでください<br>
+                • 一度開始したら最後まで完了してください
+            </div>
+            
+            <button class="btn" onclick="startExperiment()">学習を開始</button>
+        </div>
+
+        <!-- プリテスト説明 -->
+        <div id="pretest-intro" class="experiment-card hidden">
+            <h2>📝 事前テスト</h2>
+            <p style="margin-bottom: 20px;">
+                まず、<strong>40個の英単語</strong>の意味を知っているかテストします。<br>
+                知らない単語は「わからない」を選んでください。
+            </p>
+            <button class="btn" onclick="startPretest()">事前テストを開始</button>
+        </div>
+
+        <!-- 意味再生テスト -->
+        <div id="recall-test" class="experiment-card hidden">
+            <h2 id="recall-title">📝 語彙テスト</h2>
+            <div class="progress">
+                <div id="recall-progress" class="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <div class="question-container">
+                <div class="word-display" id="recall-word"></div>
+                <div class="input-group">
+                    <label for="recall-answer">この単語の意味を日本語で書いてください（わからない場合は「わからない」と記入）：</label>
+                    <textarea id="recall-answer" placeholder="意味を入力してください..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="recall-other">他に知っている意味があれば書いてください（任意）：</label>
+                    <textarea id="recall-other" placeholder="他の意味があれば入力してください..."></textarea>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="nextRecallQuestion()">次へ</button>
+        </div>
+
+        <!-- 意味認識テスト -->
+        <div id="recognition-test" class="experiment-card hidden">
+            <h2 id="recognition-title">🎯 語彙テスト</h2>
+            <div class="progress">
+                <div id="recognition-progress" class="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <div class="question-container">
+                <div class="word-display" id="recognition-word"></div>
+                <p style="margin-bottom: 15px;"><strong>この単語の意味として正しいものを選んでください：</strong></p>
+                <div id="recognition-choices"></div>
+            </div>
+            
+            <button class="btn" onclick="nextRecognitionQuestion()">次へ</button>
+        </div>
+
+        <!-- 学習セッション説明 -->
+        <div id="learning-intro" class="experiment-card hidden">
+            <h2>📚 学習セッション</h2>
+            <p style="margin-bottom: 20px;">
+                これから15分間で、<strong>30個の英単語</strong>の新しい意味を学習します。<br>
+                学習は<strong>2つのフェーズ</strong>に分かれます：
+            </p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value">📖 10分</div>
+                    <div class="stat-label">学習フェーズ</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">🧠 5分</div>
+                    <div class="stat-label">復習フェーズ</div>
+                </div>
+            </div>
+            
+            <div class="info">
+                <strong>📋 学習方法</strong><br>
+                • <strong>学習フェーズ（10分）</strong>：カードを自由に見て新しい意味を覚える<br>
+                • <strong>復習フェーズ（5分）</strong>：カードを見ずに意味を思い出す練習<br>
+                • カードをクリックすると裏返ります<br>
+                • シャッフルで順番を変えることができます<br>
+                • 単語や意味を声に出して練習することもできます<br>
+                • メモは取らないでください
+            </div>
+            
+            <button class="btn" onclick="startLearning()">学習を開始</button>
+        </div>
+
+        <!-- 学習フェーズ -->
+        <div id="learning-session" class="experiment-card hidden">
+            <h2 id="learning-phase-title">📖 学習フェーズ（10分）</h2>
+            <div class="timer" id="learning-timer">10:00</div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="current-card">1</div>
+                    <div class="stat-label">現在のカード</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="total-cards">30</div>
+                    <div class="stat-label">総カード数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="flip-count">0</div>
+                    <div class="stat-label">めくった回数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="shuffle-count">0</div>
+                    <div class="stat-label">シャッフル回数</div>
+                </div>
+            </div>
+            
+            <div class="flashcard" id="flashcard" onclick="flipCard()">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <span id="card-word"></span>
+                    </div>
+                    <div class="flashcard-back">
+                        <div id="card-meaning"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="learning-controls" id="learning-controls">
+                <button class="btn" onclick="previousCard()">← 前のカード</button>
+                <button class="btn" onclick="shuffleCards()">🔀 シャッフル</button>
+                <button class="btn" onclick="nextCard()">次のカード →</button>
+            </div>
+        </div>
+
+        <!-- 復習フェーズ -->
+        <div id="retrieval-session" class="experiment-card hidden">
+            <h2>🧠 復習フェーズ（5分）</h2>
+            <div class="timer" id="retrieval-timer">05:00</div>
+            
+            <div class="info">
+                <strong>🎯 復習方法</strong><br>
+                単語を見て、意味を思い出してから「答えを見る」ボタンを押してください。<br>
+                正解を確認したら「次の単語」ボタンで進んでください。
+            </div>
+            
+            <div class="question-container">
+                <div class="word-display" id="retrieval-word"></div>
+                <p style="margin-top: 20px; text-align: center;">
+                    <button class="btn" id="show-answer-btn" onclick="showRetrievalAnswer()">答えを見る</button>
+                </p>
+                <div id="retrieval-answer" class="hidden" style="margin-top: 20px; padding: 20px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #667eea;">
+                    <div id="retrieval-meaning"></div>
+                </div>
+                <p style="margin-top: 20px; text-align: center;">
+                    <button class="btn hidden" id="next-retrieval-btn" onclick="nextRetrievalWord()">次の単語</button>
+                </p>
+            </div>
+            
+            <div id="retrieval-complete" class="hidden">
+                <div class="info">
+                    <strong>⏰ 復習フェーズ終了！</strong><br>
+                    続いて、フィラータスクを行います。
+                </div>
+                <button class="btn" onclick="startFillerTask()">次へ</button>
+            </div>
+        </div>
+
+        <!-- フィラータスク -->
+        <div id="filler-task" class="experiment-card hidden">
+            <h2>💬 休憩時間（10分）</h2>
+            <div class="timer" id="filler-timer">10:00</div>
+            
+            <div class="info">
+                <strong>📝 質問への回答</strong><br>
+                以下の質問について、テキストエリアに自由に回答してください。<br>
+                この時間は学習した単語のことは考えずに、リラックスしてください。
+            </div>
+            
+            <div class="question-container">
+                <p style="font-weight: bold; margin-bottom: 15px;">
+                    あなたの英語学習経験について教えてください：
+                </p>
+                <ul style="text-align: left; margin-bottom: 20px;">
+                    <li>英語学習で最も楽しいと感じることは何ですか？</li>
+                    <li>英語学習で最も困難だと感じることは何ですか？</li>
+                    <li>今後の英語学習の目標はありますか？</li>
+                    <li>英語を使ってやってみたいことはありますか？</li>
+                </ul>
+                <textarea id="filler-response" style="width: 100%; height: 200px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px;" placeholder="自由に回答してください..."></textarea>
+            </div>
+            
+            <div id="filler-complete" class="hidden">
+                <div class="info">
+                    <strong>⏰ 休憩時間終了！</strong><br>
+                    続いて効果テストを行います。
+                </div>
+                <button class="btn" onclick="startPosttest()">効果テストへ</button>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="results" class="experiment-card hidden">
+            <h2>🎉 学習完了</h2>
+            <p style="margin-bottom: 20px;">
+                学習は正常に完了しました。ありがとうございました！<br>
+                以下のボタンから結果をダウンロードして、Google Classroomに提出してください。
+            </p>
+            
+            <div id="results-summary" class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="learning-time-result">0</div>
+                    <div class="stat-label">学習時間（分）</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="total-flips-result">0</div>
+                    <div class="stat-label">総めくり回数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="total-shuffles-result">0</div>
+                    <div class="stat-label">総シャッフル回数</div>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="downloadResults()">📥 結果をダウンロード</button>
+        </div>
+    </div>
+
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="polysemy_learning.js"></script>
+</body>
+</html>
